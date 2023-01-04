@@ -20,15 +20,19 @@
 <body>
   <h1 class='p2'>CombiLED Calculator</h1>
   <div id='myCanvas'>
-    <canvas width="400" id="myChart"></canvas>
+    <canvas id="myChart" width="400" ></canvas>
   </div>
   <div class="form-group">
-    <label class='p2'> wavelength: </label>
+    <label class='p2'> Wavelength: </label>
     <input id="wavelength" value=14400>
   </div>
   <div class="form-group">
     <label class='p2'> number of LEDs: </label>
     <input id="numLEDs" value=8>
+  </div>
+  <div class="form-group">
+    <label class='p2'> Each LED Time: </label>
+    <input id="LEDTime" value=360>
   </div>
   <div class="form-group">
     <label class='p2'> Time between(numLedsx360us): </label>
@@ -44,6 +48,11 @@
 <script>
   var canvas = document.getElementById('myCanvas');
   const ctx = document.getElementById('myChart');
+  var wavelength = $('#wavelength');
+  var numLEDs = $('#numLEDs');
+  var ledTime = $('#LEDTime');
+  var timeBtw = $('#timeBtw');
+  var nmLoop = $('#nmLoops');
   var datapoints;
   var data_x = [];
   var data_y = [];
@@ -58,12 +67,9 @@
   initTextField()
   
   function initTextField(){
-    var wavelength = $('#wavelength');
-    var numLEDs = $('#numLEDs');
-    var timeBtw = $('#timeBtw');
-    var nmLoop = $('#nmLoops');
-    timeBtw.text(parseInt(numLEDs.val() * 360));
-    var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * 360))) - 1;
+    
+    timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+    var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
     nmLoop.text(loop + 1);
     myChart = new Chart(ctx, {
       type: 'bar',
@@ -103,7 +109,8 @@
       //console.log(wavelength.val());
       //console.log("change")
       if(wavelength.val()) {
-        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * 360))) - 1;
+        timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
         nmLoop.text(loop + 1);
         drawCurve();
       }
@@ -116,7 +123,20 @@
       //console.log(wavelength.val());
       //console.log("change")
       if (numLEDs.val()) {
-        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * 360))) - 1;
+        timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
+        nmLoop.text(loop + 1);
+        drawCurve();
+      }
+    });
+    ledTime.keyup(function (event) {
+      //setExpr(input.val());
+      //setHashFromExpr();
+      //console.log(wavelength.val());
+      //console.log("change")
+      if (ledTime.val()) {
+        timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
         nmLoop.text(loop + 1);
         drawCurve();
       }
@@ -143,7 +163,7 @@
     var timeBtw = $('#timeBtw');
     var nmLoop = $('#nmLoops');
     
-    datapoints = Math.floor(wavelength.val() / (parseInt(numLEDs.val() * 360)));
+    datapoints = Math.floor(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val())));
   
     data_x = [];
     data_y = [];
