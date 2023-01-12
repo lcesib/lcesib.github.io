@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>CombiLED Calculator</title>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.3/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@11.5.0/lib/browser/math.min.js"></script> 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<style>
+.p2 {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+</style>
+  
+<body>
+  <h1 class='p2'>CombiLED Calculator</h1>
+  <div id='myCanvas'>
+    <canvas id="myChart" width="400" ></canvas>
+  </div>
+  <div class="form-group">
+    <label class='p2'> Wavelength: </label>
+    <input id="wavelength" value=57600>
+  </div>
+  <div class="form-group">
+    <label class='p2'> number of LEDs: </label>
+    <input id="numLEDs" value=8>
+  </div>
+  <div class="form-group">
+    <label class='p2'> Each LED Time: </label>
+    <input id="LEDTime" value=360>
+  </div>
+  <div class="form-group">
+    <label class='p2'> Time between(numLedsx360us): </label>
+    <label class='p2' id="timeBtw">
+  </div>
+  <div class="form-group">
+    <label class='p2'> nmLoops((Wavelength/TimeBetween)(number of levels): </label>
+    <label class='p2' id="nmLoops">
+  </div>
+  <br>
+  <div class="form-group">
+    <label class='p2'> Expression: </label>
+    <input class='p2' id="expr" value = cos(pi-x)>
+  </div>
+  <div class="form-group">
+    <label class='p2'> Output Array: </label>
+    <label class='p2' id="output">
+  </div>
+
+
+<script>
+  var canvas = document.getElementById('myCanvas');
+  const ctx = document.getElementById('myChart');
+  var wavelength = $('#wavelength');
+  var numLEDs = $('#numLEDs');
+  var ledTime = $('#LEDTime');
+  var timeBtw = $('#timeBtw');
+  var nmLoop = $('#nmLoops');
+  var expression = $('#expr');
+  var output = $('#output');
+  var datapoints;
+  var data_x = [];
+  var data_y = [];
+  var myChart;
+  var expr = expression.val(); //'sin(x)';
+  var scope = {
+      x: 0,
+      t: 0
+    },
+    tree;
+  var pi = Math.PI;
+  var max_level = 4000;
+  initTextField();
+  
+  function initTextField(){
+    
+    timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+    var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
+    nmLoop.text(loop + 1);
+    myChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data_x,
+        datasets: [{
+          //label: '# of Votes',
+          data: data_y,
+          borderWidth: 0,
+          barPercentage: 1.0,
+          categoryPercentage: 1.0
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            barPercentage: 1.0,
+            categoryPercentage: 1.0
+          },
+          y: {
+            beginAtZero: true
+          }
+        },
+         plugins: {
+            legend: {
+                display: false
+            },
+        }
+      }
+    });
+    
+    drawCurve();
+    // Listen for changes using jQuery.
+    wavelength.keyup(function (event) {
+      //setExpr(input.val());
+      //setHashFromExpr();
+      //console.log(wavelength.val());
+      //console.log("change")
+      if(wavelength.val()) {
+        timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
+        nmLoop.text(loop + 1);
+        drawCurve();
+      }
+      
+    });
+    
+    numLEDs.keyup(function (event) {
+      //setExpr(input.val());
+      //setHashFromExpr();
+      //console.log(wavelength.val());
+      //console.log("change")
+      if (numLEDs.val()) {
+        expr = expression.val();
+        timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
+        nmLoop.text(loop + 1);
+        drawCurve();
+      }
+    });
+    ledTime.keyup(function (event) {
+      //setExpr(input.val());
+      //setHashFromExpr();
+      //console.log(wavelength.val());
+      //console.log("change")
+      if (ledTime.val()) {
+        expr = expression.val();
+        timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
+        nmLoop.text(loop + 1);
+        drawCurve();
+      }
+    });
+    expression.keyup(function (event) {
+      //setExpr(input.val());
+      //setHashFromExpr();
+      //console.log(wavelength.val());
+      //console.log("change")
+      if (expression.val()) {
+        expr = expression.val();
+        timeBtw.text(parseInt(numLEDs.val() * ledTime.val()));
+        var loop = parseInt(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val()))) - 1;
+        nmLoop.text(loop + 1);
+        drawCurve();
+      }
+    });
+    /*  
+    timeBtw.keyup(function (event) {
+      //setExpr(input.val());
+      //setHashFromExpr();
+      //console.log(wavelength.val());
+      var loop = parseInt(wavelength.val() / timeBtw.val());
+      nmLoop.text(loop);
+    });
+    */
+  }
+  
+  function drawCurve(){
+    //create arrays for charts
+    //c = ctx.getContext('2d'); 
+    var offsets = $('#myCanvas').offset();
+    //c.clearRect(offsets.top, 0, ctx.width, ctx.height);
+    //calculate datapoint  
+    //var wavelength = $('#wavelength');
+    //var numLEDs = $('#numLEDs');
+    //var timeBtw = $('#timeBtw');
+    //var nmLoop = $('#nmLoops');
+    //var output = $('output');
+    datapoints = Math.floor(wavelength.val() / (parseInt(numLEDs.val() * ledTime.val())));
+    //setExpr(expr);
+    const node = math.parse(expr);
+    const code = node.compile();
+    data_x = [];
+    data_x_exp = [];
+    data_output = [];
+    data_y = [];
+    var CurLoop = 0;
+    //console.log(Math.floor(nmLoop.html()))
+    
+    //build dara_x_exp array
+    for(i = 0; i < datapoints; i++) 
+    {
+      data_x_exp.push((2*pi*i) / datapoints);
+    }
+    console.log(data_x_exp)
+    for(i = 0; i < (datapoints)*4; i++) 
+    {
+      data_x.push(i*Math.floor(timeBtw.html()));
+      scope.x = data_x_exp[i%datapoints]; 
+      var val_y = (code.evaluate(scope)*max_level/2) + max_level/2; //evaluateMathExpr(data_x_exp[i%datapoint]);
+      data_y.push(val_y);
+      data_output.push(math.floor(val_y));
+      //data_y.push(CurLoop*4000/parseInt(nmLoop.html()-1));
+      CurLoop++;
+      if(CurLoop >= Math.floor(nmLoop.html())) CurLoop=0;
+    };
+    
+    output.text('['+data_output.slice(0, datapoints)+']');
+    //console.log(data_x);
+    //console.log(data_y);
+    //console.log(myChart); 
+    
+    myChart.data.labels = data_x
+    myChart.data.datasets = [{
+          //label: '# of Votes',
+          data: data_y,
+          borderWidth: 0,
+          barPercentage: 1.0,
+          categoryPercentage: 1.0
+        }]
+    myChart.update()
+  }
+  
+  function setExpr(newExpr){
+    expr = newExpr;
+    tree = math.Math.floor(expr, scope);
+  }
+  
+  function evaluateMathExpr(mathX){
+    scope.x = mathX;
+    scope.t = time;
+    return tree.eval();
+  }
+</script>
+
+</body>
+</html>
